@@ -1,0 +1,28 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "a rpg discord bot ",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thedamian329/discord-bot.git"
+  },
+  "keywords": [
+    "rpg",
+    "discord",
+    "bot"
+  ],
+  "author": "Damian Albano",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thedamian329/discord-bot/issues"
+  },
+  "homepage": "https://github.com/thedamian329/discord-bot#readme",
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
