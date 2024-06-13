@@ -2,6 +2,11 @@ const { Client, Intents } = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 const secret = require('dotenv').config();
+const chop = require('./commands/chop');
+const register = require('./commands/register');
+const profile = require('./commands/profile');
+const mine = require('./commands/mine');
+const rules = require('./commands/rules');
 
 // Connect to the SQLite database
 let db = new sqlite3.Database('./rpg.db', (err) => {
@@ -10,6 +15,35 @@ let db = new sqlite3.Database('./rpg.db', (err) => {
   }
   console.log('Connected to the RPG database.');
 });
+
+const rulesMessage = `
+**Patch Notes - Version 1.2.0**
+**WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
+fixed you being able to pickpocket and challenge yourself to a fight.
+You can no longer have negative wood.
+
+
+
+       **Commands:**
+- \`!register\`: register to become a player.
+- \`!profile\`: View your stats and inventory.
+- \`!chop\`: Chop trees to gain wood, experience, and strength.
+- \`!mine\`: Mine stone to gain stone, experience, and strength
+- \`!fish\`: fish to sell and gain exp
+- \`!sell[fish][stone]\`: Sell your fish to earn gold.
+- \`!hunt\`: Hunt for meat and gain experience.
+- \`!sneak\`: Practice your stealth.
+- \`!pickpocket [@player]\`: pickpocket a player.
+- \`!fire\`: Sit by the fire to heal.
+- \`!eatbread\`: eat bread.
+- \`!eatmeat\`: eat meat.
+- \`!npc\`: View a list of enemies you can fight.
+- \`!attack [enemy]\`: Engage in battle with an enemy.
+- \`challenge [@player]\`: Challenge a player to a battle. 
+- \`!shop\`: View items available in the shop.
+- \`!buy [item]\`: Purchase an item from the shop.
+- \`!patch\`: see the current patch and patch notes.
+`;
 
 // Create necessary tables if they don't exist
 db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -23,7 +57,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   stealth INT DEFAULT 0,
   strength INT DEFAULT 10,
   wood INT DEFAULT 0,
-  wheat INT DEFAULT 0,
+  wheat INT DEFAULT 0, 
   bread INT DEFAULT 0,
   stone INT DEFAULT 0,
   level INT DEFAULT 1,
@@ -36,58 +70,37 @@ client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('messageCreate', async message => {
-  if (message.author.bot) return;
 
-  const args = message.content.slice(1).trim().split(/ +/);
+const prefix = '!';
+
+client.on('messageCreate', message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  // june 07 2024 first major updates. 
-  const rulesMessage = `
-  **Patch Notes - Version 1.2.0**
-  **WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
-fixed you being able to pickpocket and challenge yourself to a fight.
-You can no longer have negative wood.
+  if (command === 'chop') {
+    chop(message, command, db, handleLevelUp);
+  }
 
+  else if (command === 'register') {
+    register(message, command, db, handleLevelUp, client, rulesMessage);
+  }
+
+  else if (command === 'profile') {
+    profile(message, command, db, handleLevelUp,)
+  }
+
+  else if (command === 'mine') {
+    mine(message, command, db, handleLevelUp,)
+  }
+
+  else if (command === 'rules') {
+    rules(message, command, db, handleLevelUp, client, rulesMessage)
+  }
 
   
-         **Commands:**
-  - \`!register\`: register to become a player.
-  - \`!profile\`: View your stats and inventory.
-  - \`!chop\`: Chop trees to gain wood, experience, and strength.
-  - \`!mine\`: Mine stone to gain stone, experience, and strength
-  - \`!fish\`: fish to sell and gain exp
-  - \`!sell[fish][stone]\`: Sell your fish to earn gold.
-  - \`!hunt\`: Hunt for meat and gain experience.
-  - \`!sneak\`: Practice your stealth.
-  - \`!pickpocket [@player]\`: pickpocket a player.
-  - \`!fire\`: Sit by the fire to heal.
-  - \`!eatbread\`: eat bread.
-  - \`!eatmeat\`: eat meat.
-  - \`!npc\`: View a list of enemies you fight.
-  - \`!attack [enemy]\`: Engage in battle with an enemy.
-  - \`challenge [@player]\`: Challenge a player to a battle. 
-  - \`!shop\`: View items available in the shop.
-  - \`!buy [item]\`: Purchase an item from the shop.
-  - \`!patch\`: see the current patch and patch notes.
-  `;
-  
-    if (command === 'register') {
-      db.run(`INSERT INTO users (id, username, gold) VALUES (?, ?, ?)`, [message.author.id, message.author.username, 0], function(err) {
-        if (err) {
-          return message.channel.send('You are already registered.');
-        }
-        message.channel.send(`Welcome in ${message.author.username}!`);
-        
-        const user = client.users.cache.get(message.author.id);
-        if (user) {
-          user.send(rulesMessage).catch(error => console.error('Failed to send message:', error));
-        } else {
-          console.error('User not found:', message.author.id);
-        }
-      });
-    }
-  
+
     if (command === 'rules') {
       const user = client.users.cache.get(message.author.id);
       if (user) {
@@ -96,6 +109,8 @@ You can no longer have negative wood.
         console.error('User not found:', message.author.id);
       }
     }
+
+   
  
     if (command === 'patch') {
       const user = client.users.cache.get(message.author.id);
@@ -138,16 +153,6 @@ You can no longer have negative wood.
   }
   
 
-
-  if (command === 'profile') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-      message.channel.send(`Profile of ${row.username}: \nLevel: ${row.level} \nEXP: ${row.exp} \nGold: ${row.gold} \nWood: ${row.wood} \nStone: ${row.stone} \nFish: ${row.fish} \nStrength: ${row.strength} \nHealth: ${row.health} \nStealth: ${row.stealth} \nMeat: ${row.meat} \nWheat: ${row.wheat} \nBread: ${row.bread} \nDeaths: ${row.death} \nPvp: ${row.pvp}`);
-    });
-  }
-
   function resetToLevel1(userId) {
     const defaultHealth = 50;
     const defaultStrength = 10;
@@ -169,45 +174,6 @@ You can no longer have negative wood.
     });
   }
 
-
-  if (command === 'chop') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        if (!row) {
-            return message.channel.send('You are not registered. Use !register to sign up');
-        }
-
-        db.run(`UPDATE users SET wood = wood + 1, strength = strength + 1, exp = exp + 10 WHERE id = ?`, [message.author.id], function (err) {
-            if (err) {
-                return console.error(err.message);
-            }
-            message.channel.send('You chopped a tree and gained 10 EXP, 1 Strength and 1 wood!');
-            handleLevelUp(message.author.id);
-        });
-    });
-}
-
-  if (command === 'mine') {
-  db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-          return console.error(err.message);
-      }
-      if (!row) {
-          return message.channel.send('You are not registered. Use !register to sign up');
-      }
-
-      db.run(`UPDATE users SET stone = stone + 1, strength = strength +2, exp = exp + 15 WHERE id = ?`, [message.author.id], function (err) {
-          if (err) {
-              return console.error(err.message);
-          }
-
-          message.channel.send('You mined stone, gaining 15 exp and 2 strength');
-          handleLevelUp(message.author.id)
-      });
-  });
-}
 
 if (command === 'harvest') {
   db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
@@ -605,21 +571,23 @@ if (command === 'pickpocket') {
             if (err) {
               return console.error(err.message);
             }
-            message.channel.send(`You sold all your stones (${stonesSold}) and got ${goldEarned} gold.`);
+            message.channel.send(`You sold all your stone (${stonesSold}) and got ${goldEarned} gold.`);
           });
         } else {
-          message.channel.send('You don\'t have any stones to sell.');
+          message.channel.send('You don\'t have any stone to sell.');
         }
       });
     } else {
       message.channel.send('Invalid item to sell. Use !sell fish or !sell stone.');
     }
   }
+
   
-//shop commands 
+//shop stuff  
   const shopInventory = {
     make_sure_you_are_full_health_before_buying: {gold: 0, strength: 0, health: 0},
     wooden_sword: { gold: 100, strength: 10, health: 0 },
+    health_potion: { gold: 75, strength: 0, health: 100},
     wooden_bow: { gold: 150, strength: 12, health: 0 },
     leather_armor: { gold: 100, strength: 0, health: 10 },
     sword: { gold: 1000, strength: 50, health: 20 },
@@ -680,6 +648,7 @@ if (command === 'pickpocket') {
     });
   }
 
+
    if (command === 'eatbread') {
     db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
       if (err) {
@@ -689,12 +658,12 @@ if (command === 'pickpocket') {
         return message.channel.send('You are not registered. Use !register to sign up.');
       }
       if (row.bread > 0) {
-        const newHealth = Math.min(row.health + 15, getDefaultHealthForLevel(row.level)); 
+        const newHealth = Math.min(row.health + 10, getDefaultHealthForLevel(row.level)); 
         db.run(`UPDATE users SET bread = bread - 1, health = ? WHERE id = ?`, [newHealth, message.author.id], function(err) {
           if (err) {
             return console.error(err.message);
           }
-          message.channel.send(`You ate a piece of bread and restored 15 health. Your health is now ${newHealth}.`);
+          message.channel.send(`You ate a piece of bread and restored 10 health. Your health is now ${newHealth}.`);
         });
       } else {
         message.channel.send('You have no bread to eat.');
@@ -726,7 +695,6 @@ if (command === 'pickpocket') {
   
 
   if (command === 'fire') {
-    // Retrieve the player's current level and health
     db.get(`SELECT level, health, wood FROM users WHERE id = ?`, [message.author.id], (err, row) => {
       if (err) {
         return console.error(err.message);
@@ -740,19 +708,17 @@ if (command === 'pickpocket') {
         return message.channel.send('You do not have any wood to start a fire.');
       }
   
-      // Calculate the maximum health based on the player's level
       let maxHealth = 50 + (row.level - 1) * 50;
       if (row.health >= maxHealth) {
         return message.channel.send('You are already at full health.');
       }
   
-      // Calculate the health gain from sitting by the fire
+    // how much you heal for
       let healthGain = 50;
   
-      // Calculate the resulting health after healing
-      let newHealth = Math.min(maxHealth, row.health + healthGain); // Ensure health doesn't exceed maxHealth
+      let newHealth = Math.min(maxHealth, row.health + healthGain);
   
-      // Update the player's health in the database
+
       db.run(`UPDATE users SET health = ?, wood = wood - 5 WHERE id = ?`, [newHealth, message.author.id], function(err) {
         if (err) {
           return console.error(err.message);
