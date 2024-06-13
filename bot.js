@@ -7,6 +7,11 @@ const register = require('./commands/register');
 const profile = require('./commands/profile');
 const mine = require('./commands/mine');
 const rules = require('./commands/rules');
+const harvest = require('./commands/harvest');
+const bake = require('./commands/bake');
+const fish = require('./commands/fish');
+const hunt = require('./commands/hunt');
+const sneak = require('./commands/sneak');
 
 // Connect to the SQLite database
 let db = new sqlite3.Database('./rpg.db', (err) => {
@@ -79,47 +84,38 @@ client.on('messageCreate', message => {
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
-  if (command === 'chop') {
-    chop(message, command, db, handleLevelUp);
+  switch (command) {
+    case 'chop':
+      chop(message, command, db, handleLevelUp);
+      break;
+    case 'register':
+      register(message, command, db, handleLevelUp, client, rulesMessage);
+      break;
+    case 'profile':
+      profile(message, command, db, handleLevelUp);
+      break;
+    case 'mine':
+      mine(message, command, db, handleLevelUp);
+      break;
+    case 'rules':
+      rules(message, command, db, handleLevelUp, client, rulesMessage);
+      break;
+    case 'harvest':
+      harvest(message, command, db, handleLevelUp);
+      break;
+    case 'bake': 
+      bake(message, command, db, handleLevelUp);
+    break;
+    case 'fish':
+      fish(message, command, db, handleLevelUp);
+    break;
+    case 'hunt':
+      hunt(message, command, db, handleLevelUp);
+    break;
+    case 'sneak':
+      sneak(message, command , db, handleLevelUp);
+    break;
   }
-
-  else if (command === 'register') {
-    register(message, command, db, handleLevelUp, client, rulesMessage);
-  }
-
-  else if (command === 'profile') {
-    profile(message, command, db, handleLevelUp,)
-  }
-
-  else if (command === 'mine') {
-    mine(message, command, db, handleLevelUp,)
-  }
-
-  else if (command === 'rules') {
-    rules(message, command, db, handleLevelUp, client, rulesMessage)
-  }
-
-  
-
-    if (command === 'rules') {
-      const user = client.users.cache.get(message.author.id);
-      if (user) {
-        user.send(rulesMessage).catch(error => console.error('Failed to send message:', error));
-      } else {
-        console.error('User not found:', message.author.id);
-      }
-    }
-
-   
- 
-    if (command === 'patch') {
-      const user = client.users.cache.get(message.author.id);
-      if (user){
-        user.send(rulesMessage).catch(error => console.error('Failed to send message', error));
-      } else {
-        console.error('User not found:', message.author.id);
-      }
-    }
 
  
   function handleLevelUp(userId) {
@@ -174,49 +170,6 @@ client.on('messageCreate', message => {
     });
   }
 
-
-if (command === 'harvest') {
-  db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    if (!row) {
-      return message.channel.send('You are not registered. Use !register to sign up');
-    }
-
-    db.run(`UPDATE users SET wheat = wheat + 1, exp = exp + 15 WHERE id = ?`,[message.author.id], function (err) {
-      if (err) {
-        return console.error(err.message);
-      }
-      message.channel.send('You harvested some wheat, gaining 15 exp!');
-      handleLevelUp(message.author.id)
-    });
-  });
-}
-
-
-if (command === 'bake') {
-  db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    if (!row) {
-      return message.channel.send('You are not registered. Use !register to sign up');
-    }
-
-    if (row.wheat < 5) {
-      return message.channel.send('You do not have enough wheat to bake bread.');
-    }
-
-    db.run(`UPDATE users SET wheat = wheat - 5, bread = bread + 1 WHERE id = ?`, [message.author.id], function (err) {
-      if (err) {
-        return console.error(err.message);
-      }
-      message.channel.send('You used 5 wheat and baked a loaf of bread!');
-      handleLevelUp(message.author.id);
-    });
-  });
-}
 
   const enemies = {
     slime: { health: 50, strength: 20, exp: 10, gold: 5 },
@@ -415,78 +368,6 @@ if (command === 'bake') {
       });
     }
 
-
-
-  if (command === 'fish') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-  
-      const catchFish = Math.random() < 0.40;
-  
-      if (catchFish) {
-        db.run(`UPDATE users SET fish = fish + 1, exp = exp + 15 WHERE id = ?`, [message.author.id], function(err) {
-          if (err) {
-            return console.error(err.message);
-          }
-          message.channel.send('You caught a fish and gained 15 EXP!');
-          handleLevelUp(message.author.id);
-        });
-      } else {
-        message.channel.send('No fish were caught');
-      }
-    });
-  }
-  
-  if (command === 'hunt') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-  
-      const huntRabbit = Math.random() < 0.25;
-  
-      if (huntRabbit) {
-        db.run(`UPDATE users SET meat = meat + 1, exp = exp + 25 WHERE id = ?`, [message.author.id], function(err) {
-          if (err) {
-            return console.error(err.message);
-          }
-          message.channel.send('You hunt down a rabbit gaining 1 meat and 25 exp!');
-          handleLevelUp(message.author.id);
-        });
-      } else {
-        message.channel.send('You return with nothing');
-      }
-    });
-  }
-
-  if (command === 'sneak') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        if (!row) {
-            return message.channel.send('You are not registered. Use !register to sign up');
-        }
-
-        db.run(`UPDATE users SET stealth = stealth +1 WHERE id = ?`, [message.author.id], function (err) {
-            if (err) {
-                return console.error(err.message);
-            }
-
-            message.channel.send('You sneak around');
-            handleLevelUp(message.author.id)
-        });
-    });
-}
-  
 
 if (command === 'pickpocket') {
   const targetId = args[0].replace(/[^0-9]/g, '');  // Extract ID from mention
