@@ -13,6 +13,7 @@ const fish = require('./commands/fish');
 const hunt = require('./commands/hunt');
 const sneak = require('./commands/sneak');
 const fire = require('./commands/fire');
+const pickpocket = require('./commands/pickpocket');
 
 // Connect to the SQLite database
 let db = new sqlite3.Database('./rpg.db', (err) => {
@@ -23,7 +24,7 @@ let db = new sqlite3.Database('./rpg.db', (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 1.2.0**
+**Patch Notes - Version 1.3.0**
 **WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
 fixed you being able to pickpocket and challenge yourself to a fight.
 You can no longer have negative wood.
@@ -119,6 +120,10 @@ client.on('messageCreate', message => {
     case 'fire':
       fire(message, command, db, handleLevelUp);
     break;
+    case 'pickpocket':
+      pickpocket(message, command, db, handleLevelUp, client, args);
+    break;
+
   }
 
  
@@ -371,48 +376,6 @@ client.on('messageCreate', message => {
         });
       });
     }
-
-
-if (command === 'pickpocket') {
-  const targetId = args[0].replace(/[^0-9]/g, '');  // Extract ID from mention
-  if (message.author.id === targetId) {
-    return message.channel.send('You cannot pickpocket yourself!');
-  }
-  db.get(`SELECT * FROM users WHERE id = ?`, [targetId], (err, target) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    if (!target) {
-      return message.channel.send('Target not found.');
-    }
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, user) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!user) {
-        return message.channel.send('You are not registered. Use !register to sign up');
-      }
-      const successChance = Math.min(75, Math.max(25, 10 + user.stealth - target.stealth));
-      if (Math.random() * 100 < successChance) {
-        const amount = Math.floor(Math.random() * (target.gold / 2)) + 1;
-        db.run(`UPDATE users SET gold = gold - ? WHERE id = ?`, [amount, target.id], function(err) {
-          if (err) {
-            return console.error(err.message);
-          }
-          db.run(`UPDATE users SET gold = gold + ?, stealth = stealth + 1 WHERE id = ?`, [amount, message.author.id], function(err) {
-            if (err) {
-              return console.error(err.message);
-            }
-            message.channel.send(`You successfully pickpocketed ${amount} gold from ${target.username} and gained 1 stealth.`);
-            handleLevelUp(message.author.id);
-          });
-        });
-      } else {
-        message.channel.send('Pickpocket attempt failed. Better luck next time!');
-      }
-    });
-  });
-}
 
 
   if (command === 'sell') {
