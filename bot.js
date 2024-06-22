@@ -14,6 +14,10 @@ const hunt = require('./commands/hunt');
 const sneak = require('./commands/sneak');
 const fire = require('./commands/fire');
 const pickpocket = require('./commands/pickpocket');
+const shop = require('./commands/shop');
+const eatbread = require('./commands/eatbread');
+const eatmeat = require('./commands/eatmeat');
+const sell = require('./commands/sell');
 
 // Connect to the SQLite database
 let db = new sqlite3.Database('./rpg.db', (err) => {
@@ -123,6 +127,19 @@ client.on('messageCreate', message => {
     case 'pickpocket':
       pickpocket(message, command, db, handleLevelUp, client, args);
     break;
+    case 'shop':
+      shop(message, command, db, handleLevelUp);
+    break;
+    case 'eatbread':
+      eatbread(message, command, db, handleLevelUp, getDefaultHealthForLevel);
+    break;
+    case 'eatmeat':
+      eatmeat(message, command, db, handleLevelUp, getDefaultHealthForLevel);
+    break;
+    case 'sell':
+      sell(message, command, db, handleLevelUp. client);
+    break;
+  
 
   }
 
@@ -377,60 +394,6 @@ client.on('messageCreate', message => {
       });
     }
 
-
-  if (command === 'sell') {
-    const args = message.content.split(' ');
-    const itemToSell = args[1];
-  
-    if (itemToSell === 'fish') {
-      db.get(`SELECT fish, gold FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-        if (err) {
-          return console.error(err.message);
-        }
-        if (!row) {
-          return message.channel.send('You are not registered. Use !register to sign up.');
-        }
-        if (row.fish > 0) {
-          const fishSold = row.fish;
-          const goldEarned = fishSold * 3;
-          db.run(`UPDATE users SET gold = ?, fish = 0 WHERE id = ?`, [row.gold + goldEarned, message.author.id], function(err) {
-            if (err) {
-              return console.error(err.message);
-            }
-            message.channel.send(`You sold all your fish (${fishSold}) and got ${goldEarned} gold.`);
-          });
-        } else {
-          message.channel.send('You don\'t have any fish to sell.');
-        }
-      });
-
-    } else if (itemToSell === 'stone') {
-      db.get(`SELECT stone, gold FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-        if (err) {
-          return console.error(err.message);
-        }
-        if (!row) {
-          return message.channel.send('You are not registered. Use !register to sign up.');
-        }
-        if (row.stone > 0) {
-          const stonesSold = row.stone;
-          const goldEarned = stonesSold * 2;
-          db.run(`UPDATE users SET gold = ?, stone = 0 WHERE id = ?`, [row.gold + goldEarned, message.author.id], function(err) {
-            if (err) {
-              return console.error(err.message);
-            }
-            message.channel.send(`You sold all your stone (${stonesSold}) and got ${goldEarned} gold.`);
-          });
-        } else {
-          message.channel.send('You don\'t have any stone to sell.');
-        }
-      });
-    } else {
-      message.channel.send('Invalid item to sell. Use !sell fish or !sell stone.');
-    }
-  }
-
-  
 //shop stuff  
   const shopInventory = {
     make_sure_you_are_full_health_before_buying: {gold: 0, strength: 0, health: 0},
@@ -452,17 +415,6 @@ client.on('messageCreate', message => {
     lightning_spell: { gold: 35000, strength: 800, health: 250 },
     bacardi: {gold: 100000, strength: 1000, health: -400}
 };
-
-
-  if (command === 'shop') {
-  let shopList = 'List of items in shop:\n';
-  for (const shop in shopInventory) {
-      shopList += `**${shop}** - Gold: ${shopInventory[shop].gold}, Strength: ${shopInventory[shop].strength}, health ${shopInventory[shop].health}\n`;
-  }
-  message.channel.send(shopList)
-      .catch(error => console.error('Failed to send message:', error));
-}
-
 
   if (command === 'buy') {
     const itemName = args[0];
@@ -497,52 +449,6 @@ client.on('messageCreate', message => {
   }
 
 
-   if (command === 'eatbread') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-      if (row.bread > 0) {
-        const newHealth = Math.min(row.health + 10, getDefaultHealthForLevel(row.level)); 
-        db.run(`UPDATE users SET bread = bread - 1, health = ? WHERE id = ?`, [newHealth, message.author.id], function(err) {
-          if (err) {
-            return console.error(err.message);
-          }
-          message.channel.send(`You ate a piece of bread and restored 10 health. Your health is now ${newHealth}.`);
-        });
-      } else {
-        message.channel.send('You have no bread to eat.');
-      }
-    });
-  }
-
-  if (command === 'eatmeat') {
-    db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-      if (row.meat > 0) {
-        const newHealth = Math.min(row.health + 25, getDefaultHealthForLevel(row.level)); // Heal for 50 health
-        db.run(`UPDATE users SET meat = meat - 1, health = ? WHERE id = ?`, [newHealth, message.author.id], function(err) {
-          if (err) {
-            return console.error(err.message);
-          }
-          message.channel.send(`You ate a piece of meat and restored 25 health. Your health is now ${newHealth}.`);
-        });
-      } else {
-        message.channel.send('You have no meat to eat.');
-      }
-    });
-  }
-
-
-  
 });
 
 
