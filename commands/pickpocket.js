@@ -34,7 +34,7 @@ if (command === 'pickpocket') {
           });
         });
       } else {
-        message.channel.send('Pickpocket attempt failed. Better luck next time!');
+        message.channel.send('Pickpocket attempt failed.');
       }
     });
   });

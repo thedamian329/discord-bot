@@ -28,10 +28,10 @@ let db = new sqlite3.Database('./rpg.db', (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 1.3.0**
+**Patch Notes - Version 1.4.0**
 **WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
 fixed you being able to pickpocket and challenge yourself to a fight.
-You can no longer have negative wood.
+You can no longer have negative wood. Added a gambling function. Win gold or lose health!
 
 
 
@@ -56,7 +56,7 @@ You can no longer have negative wood.
 - \`!patch\`: see the current patch and patch notes.
 `;
 
-// Create necessary tables if they don't exist
+//player inventory 
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT,
@@ -139,8 +139,6 @@ client.on('messageCreate', message => {
     case 'sell':
       sell(message, command, db, handleLevelUp. client);
     break;
-  
-
   }
 
  
@@ -188,13 +186,15 @@ client.on('messageCreate', message => {
     const defaultStone = 0;
 
 
-    db.run(`UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ?  WHERE id = ?`, [defaultHealth, defaultStrength, defaultGold, defaultFish, defaultMeat, defaultStealth, defaultWood, defaultWheat, defaultBread, defaultStone, userId], (err) => {
+    db.run(`UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ? WHERE id = ?`, [defaultHealth, defaultStrength, defaultGold, defaultFish, defaultMeat, defaultStealth, defaultWood, defaultWheat, defaultBread, defaultStone, userId], (err) => {
       if (err) {
         return console.error(err.message);
       }
       client.users.cache.get(userId).send(`You died. Time to start over`);
     });
   }
+
+  module.exports = {resetToLevel1};
 
 
   const enemies = {
