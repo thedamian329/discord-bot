@@ -5,7 +5,7 @@ if (command === 'fish') {
       return console.error(err.message);
     }
     if (!row) {
-      return message.channel.send('You are not registered. Use !register to sign up.');
+      return message.channel.send('You are not registered dumby. Use !register to sign up.');
     }
 
     const catchFish = Math.random() < 0.40;
@@ -15,7 +15,7 @@ if (command === 'fish') {
         if (err) {
           return console.error(err.message);
         }
-        message.channel.send('You caught a fish and gained 15 EXP!');
+        message.channel.send('You caught a fish and gained 15 EXP & a fat cock!');
         handleLevelUp(message.author.id);
       });
     } else {

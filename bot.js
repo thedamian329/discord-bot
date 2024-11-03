@@ -1,30 +1,32 @@
-const { Client, Intents } = require('discord.js');
-const sqlite3 = require('sqlite3').verbose();
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
-const secret = require('dotenv').config();
-const chop = require('./commands/chop');
-const register = require('./commands/register');
-const profile = require('./commands/profile');
-const mine = require('./commands/mine');
-const rules = require('./commands/rules');
-const harvest = require('./commands/harvest');
-const bake = require('./commands/bake');
-const fish = require('./commands/fish');
-const hunt = require('./commands/hunt');
-const sneak = require('./commands/sneak');
-const fire = require('./commands/fire');
-const pickpocket = require('./commands/pickpocket');
-const shop = require('./commands/shop');
-const eatbread = require('./commands/eatbread');
-const eatmeat = require('./commands/eatmeat');
-const sell = require('./commands/sell');
+const { Client, Intents } = require("discord.js");
+const sqlite3 = require("sqlite3").verbose();
+const client = new Client({
+  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+});
+const secret = require("dotenv").config();
+const chop = require("./commands/chop");
+const register = require("./commands/register");
+const profile = require("./commands/profile");
+const mine = require("./commands/mine");
+const rules = require("./commands/rules");
+const harvest = require("./commands/harvest");
+const bake = require("./commands/bake");
+const fish = require("./commands/fish");
+const hunt = require("./commands/hunt");
+const sneak = require("./commands/sneak");
+const fire = require("./commands/fire");
+const pickpocket = require("./commands/pickpocket");
+const shop = require("./commands/shop");
+const eatbread = require("./commands/eatbread");
+const eatmeat = require("./commands/eatmeat");
+const sell = require("./commands/sell");
 
 // Connect to the SQLite database
-let db = new sqlite3.Database('./rpg.db', (err) => {
+let db = new sqlite3.Database("./rpg.db", (err) => {
   if (err) {
     console.error(err.message);
   }
-  console.log('Connected to the RPG database.');
+  console.log("Connected to the RPG database.");
 });
 
 const rulesMessage = `
@@ -56,7 +58,7 @@ You can no longer have negative wood. Added a gambling function. Win gold or los
 - \`!patch\`: see the current patch and patch notes.
 `;
 
-//player inventory 
+//player inventory
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT,
@@ -76,102 +78,110 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   exp INT DEFAULT 0
 )`);
 
-
-client.once('ready', () => {
+client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
+const prefix = "!";
 
-const prefix = '!';
-
-client.on('messageCreate', message => {
+client.on("messageCreate", (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
 
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
 
   switch (command) {
-    case 'chop':
+    case "chop":
       chop(message, command, db, handleLevelUp);
       break;
-    case 'register':
+    case "register":
       register(message, command, db, handleLevelUp, client, rulesMessage);
       break;
-    case 'profile':
+    case "profile":
       profile(message, command, db, handleLevelUp);
       break;
-    case 'mine':
+    case "mine":
       mine(message, command, db, handleLevelUp);
       break;
-    case 'rules':
+    case "rules":
       rules(message, command, db, handleLevelUp, client, rulesMessage);
       break;
-    case 'harvest':
+    case "harvest":
       harvest(message, command, db, handleLevelUp);
       break;
-    case 'bake': 
+    case "bake":
       bake(message, command, db, handleLevelUp);
-    break;
-    case 'fish':
+      break;
+    case "fish":
       fish(message, command, db, handleLevelUp);
-    break;
-    case 'hunt':
+      break;
+    case "hunt":
       hunt(message, command, db, handleLevelUp);
-    break;
-    case 'sneak':
-      sneak(message, command , db, handleLevelUp);
-    break;
-    case 'fire':
+      break;
+    case "sneak":
+      sneak(message, command, db, handleLevelUp);
+      break;
+    case "fire":
       fire(message, command, db, handleLevelUp);
-    break;
-    case 'pickpocket':
+      break;
+    case "pickpocket":
       pickpocket(message, command, db, handleLevelUp, client, args);
-    break;
-    case 'shop':
+      break;
+    case "shop":
       shop(message, command, db, handleLevelUp);
-    break;
-    case 'eatbread':
+      break;
+    case "eatbread":
       eatbread(message, command, db, handleLevelUp, getDefaultHealthForLevel);
-    break;
-    case 'eatmeat':
+      break;
+    case "eatmeat":
       eatmeat(message, command, db, handleLevelUp, getDefaultHealthForLevel);
-    break;
-    case 'sell':
-      sell(message, command, db, handleLevelUp. client);
-    break;
+      break;
+    case "sell":
+      sell(message, command, db, handleLevelUp.client);
+      break;
   }
 
- 
   function handleLevelUp(userId) {
-    db.get(`SELECT level, exp, health, strength FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err) {
-        return console.error(err.message);
+    db.get(
+      `SELECT level, exp, health, strength FROM users WHERE id = ?`,
+      [userId],
+      (err, row) => {
+        if (err) {
+          return console.error(err.message);
+        }
+
+        let requiredExp = getRequiredExp(row.level);
+        if (row.exp >= requiredExp) {
+          let newLevel = row.level + 1;
+          let newHealth = getDefaultHealthForLevel(newLevel); // Calculate health based on new level
+          let newStrength = row.strength + 25;
+
+          db.run(
+            `UPDATE users SET level = ?, exp = exp - ?, health = ?, strength = ? WHERE id = ?`,
+            [newLevel, requiredExp, newHealth, newStrength, userId],
+            (err) => {
+              if (err) {
+                return console.error(err.message);
+              }
+              client.users.cache
+                .get(userId)
+                .send(
+                  `You're now level ${newLevel}! Your health has increased to ${newHealth} and your strength is now ${newStrength}`
+                );
+            }
+          );
+        }
       }
-  
-      let requiredExp = getRequiredExp(row.level);
-      if (row.exp >= requiredExp) {
-        let newLevel = row.level + 1;
-        let newHealth = getDefaultHealthForLevel(newLevel); // Calculate health based on new level
-        let newStrength = row.strength + 25;
-  
-        db.run(`UPDATE users SET level = ?, exp = exp - ?, health = ?, strength = ? WHERE id = ?`, [newLevel, requiredExp, newHealth, newStrength, userId], (err) => {
-          if (err) {
-            return console.error(err.message);
-          }
-          client.users.cache.get(userId).send(`You're now level ${newLevel}! Your health has increased to ${newHealth} and your strength is now ${newStrength}`);
-        });
-      }
-    });
+    );
   }
-  
+
   function getRequiredExp(level) {
-    return 500  * level; 
+    return 500 * level;
   }
-  
+
   function getDefaultHealthForLevel(level) {
-    return 50 * level; 
+    return 50 * level;
   }
-  
 
   function resetToLevel1(userId) {
     const defaultHealth = 50;
@@ -185,24 +195,38 @@ client.on('messageCreate', message => {
     const defaultBread = 0;
     const defaultStone = 0;
 
-
-    db.run(`UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ? WHERE id = ?`, [defaultHealth, defaultStrength, defaultGold, defaultFish, defaultMeat, defaultStealth, defaultWood, defaultWheat, defaultBread, defaultStone, userId], (err) => {
-      if (err) {
-        return console.error(err.message);
+    db.run(
+      `UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ? WHERE id = ?`,
+      [
+        defaultHealth,
+        defaultStrength,
+        defaultGold,
+        defaultFish,
+        defaultMeat,
+        defaultStealth,
+        defaultWood,
+        defaultWheat,
+        defaultBread,
+        defaultStone,
+        userId,
+      ],
+      (err) => {
+        if (err) {
+          return console.error(err.message);
+        }
+        client.users.cache.get(userId).send(`You died. Time to start over`);
       }
-      client.users.cache.get(userId).send(`You died. Time to start over`);
-    });
+    );
   }
 
-  module.exports = {resetToLevel1};
-
+  module.exports = { resetToLevel1 };
 
   const enemies = {
     slime: { health: 50, strength: 20, exp: 10, gold: 5 },
     wolf: { health: 100, strength: 50, exp: 25, gold: 10 },
     crab: { health: 200, strength: 30, exp: 20, gold: 8 },
     goblin: { health: 500, strength: 200, exp: 50, gold: 15 },
-    spider: {health: 800, strength: 500, exp: 75, gold: 30},
+    spider: { health: 800, strength: 500, exp: 75, gold: 30 },
     zombie: { health: 2000, strength: 20, exp: 0, gold: 100 },
     orc: { health: 1500, strength: 800, exp: 150, gold: 50 },
     ogre: { health: 2000, strength: 1000, exp: 200, gold: 150 },
@@ -210,44 +234,48 @@ client.on('messageCreate', message => {
     knight: { health: 5000, strength: 2000, exp: 1000, gold: 500 },
     vampire: { health: 10000, strength: 5000, exp: 1500, gold: 1000 },
     dragon: { health: 250000, strength: 15000, exp: 2000, gold: 2500 },
-    uncle_donnie: {health: 1000000, strength: 100000, exp: 5000, gold: 10000}
-};
+    uncle_donnie: { health: 1000000, strength: 100000, exp: 5000, gold: 10000 },
+  };
 
+  if (command === "npc") {
+    let npcList = "List of enemies you can attack:\n";
+    for (const enemy in enemies) {
+      npcList += `**${enemy}** - Health: ${enemies[enemy].health}, Strength: ${enemies[enemy].strength}, EXP: ${enemies[enemy].exp}, Gold: ${enemies[enemy].gold}\n`;
+    }
+    message.channel
+      .send(npcList)
+      .catch((error) => console.error("failed to send:", error));
+  }
 
-  if (command === 'npc') {
-      let npcList = 'List of enemies you can attack:\n';
-      for (const enemy in enemies) {
-        npcList += `**${enemy}** - Health: ${enemies[enemy].health}, Strength: ${enemies[enemy].strength}, EXP: ${enemies[enemy].exp}, Gold: ${enemies[enemy].gold}\n`;
-      }
-      message.channel.send(npcList)
-            .catch(error => console.error('failed to send:', error));
-      
+  if (command === "attack") {
+    const enemyType = args[0];
+    const enemy = enemies[enemyType];
+
+    if (!enemy) {
+      return message.channel.send("Invalid enemy type.");
     }
 
-    if (command === 'attack') {
-      const enemyType = args[0];
-      const enemy = enemies[enemyType];
-  
-      if (!enemy) {
-        return message.channel.send('Invalid enemy type.');
-      }
-  
-      db.get(`SELECT * FROM users WHERE id = ?`, [message.author.id], (err, player) => {
+    db.get(
+      `SELECT * FROM users WHERE id = ?`,
+      [message.author.id],
+      (err, player) => {
         if (err) {
           return console.error(err.message);
         }
         if (!player) {
-          return message.channel.send('You are not registered. Use !register to sign up.');
+          return message.channel.send(
+            "You are not registered. Use !register to sign up."
+          );
         }
-  
+
         let playerAttack = Math.max(0, player.strength);
         let enemyAttack = Math.max(0, enemy.strength);
-  
+
         let playerHealth = player.health;
         let enemyHealth = enemy.health;
-  
+
         let battleLog = `**Battle with a ${enemyType}!**\n\n`;
-  
+
         while (playerHealth > 0 && enemyHealth > 0) {
           enemyHealth -= playerAttack;
           battleLog += `You attack the ${enemyType} for ${playerAttack} damage.\n`;
@@ -255,155 +283,201 @@ client.on('messageCreate', message => {
             battleLog += `The ${enemyType} has been defeated!\n`;
             break;
           }
-  
+
           playerHealth -= enemyAttack;
           battleLog += `The ${enemyType} attacks you for ${enemyAttack} damage.\n`;
           if (playerHealth <= 0) {
             battleLog += `You have been defeated by the ${enemyType}.\n`;
             break;
           }
-  
+
           battleLog += `\n`;
         }
-  
+
         if (playerHealth <= 0) {
-          db.run(`UPDATE users SET health = 0, death = death + 1 WHERE id = ?`, [message.author.id], (err) => {
-            if (err) {
-              return console.error(err.message);
+          db.run(
+            `UPDATE users SET health = 0, death = death + 1 WHERE id = ?`,
+            [message.author.id],
+            (err) => {
+              if (err) {
+                return console.error(err.message);
+              }
+              message.channel.send(battleLog);
+              resetToLevel1(message.author.id);
             }
-            message.channel.send(battleLog);
-            resetToLevel1(message.author.id); 
-          });
+          );
         } else if (enemyHealth <= 0) {
           const newExp = player.exp + enemy.exp;
           const newGold = player.gold + enemy.gold;
-  
-          db.run(`UPDATE users SET health = ?, exp = ?, gold = ? WHERE id = ?`, [playerHealth, player.exp + enemy.exp, newGold, message.author.id], (err) => {
-            if (err) {
-              return console.error(err.message);
+
+          db.run(
+            `UPDATE users SET health = ?, exp = ?, gold = ? WHERE id = ?`,
+            [playerHealth, player.exp + enemy.exp, newGold, message.author.id],
+            (err) => {
+              if (err) {
+                return console.error(err.message);
+              }
+              message.channel.send(
+                `${battleLog}\nYou defeated the ${enemyType} and earned ${enemy.exp} EXP and ${enemy.gold} gold! You have ${playerHealth} health remaining.`
+              );
+              handleLevelUp(message.author.id);
             }
-            message.channel.send(`${battleLog}\nYou defeated the ${enemyType} and earned ${enemy.exp} EXP and ${enemy.gold} gold! You have ${playerHealth} health remaining.`);
-            handleLevelUp(message.author.id);
-          });
+          );
         } else {
-          db.run(`UPDATE users SET health = ? WHERE id = ?`, [playerHealth, message.author.id], (err) => {
-            if (err) {
-              return console.error(err.message);
+          db.run(
+            `UPDATE users SET health = ? WHERE id = ?`,
+            [playerHealth, message.author.id],
+            (err) => {
+              if (err) {
+                return console.error(err.message);
+              }
+              message.channel.send(
+                `${battleLog}\nYou attacked the ${enemyType} and have ${playerHealth} health remaining.`
+              );
             }
-            message.channel.send(`${battleLog}\nYou attacked the ${enemyType} and have ${playerHealth} health remaining.`);
-          });
+          );
         }
-      });
+      }
+    );
+  }
+
+  if (command === "challenge") {
+    const challengedUser = message.mentions.users.first();
+    if (!challengedUser) {
+      return message.channel.send("Please mention a user to challenge.");
     }
 
-    
+    const challengerId = message.author.id;
+    const challengedId = challengedUser.id;
 
-    if (command === 'challenge') {
-      const challengedUser = message.mentions.users.first();
-      if (!challengedUser) {
-        return message.channel.send('Please mention a user to challenge.');
-      }
-  
-      const challengerId = message.author.id;
-      const challengedId = challengedUser.id;
-  
-  
-      db.get(`SELECT * FROM users WHERE id = ?`, [challengedId], (err, row) => {
-        if (err) return console.error(err.message);
-        if (!row) return message.channel.send('The user you challenged is not registered.');
-  
-        message.channel.send(`<@${challengedId}>, you have been challenged to a PvP battle by <@${challengerId}>! Type \`!accept\` to accept the challenge or \`!decline\` to decline.`);
-        
+    db.get(`SELECT * FROM users WHERE id = ?`, [challengedId], (err, row) => {
+      if (err) return console.error(err.message);
+      if (!row)
+        return message.channel.send(
+          "The user you challenged is not registered."
+        );
 
-        client.challenges = client.challenges || {};
-        client.challenges[challengedId] = { challengerId, challengedId };
-      });
+      message.channel.send(
+        `<@${challengedId}>, you have been challenged to a PvP battle by <@${challengerId}>! Type \`!accept\` to accept the challenge or \`!decline\` to decline.`
+      );
+
+      client.challenges = client.challenges || {};
+      client.challenges[challengedId] = { challengerId, challengedId };
+    });
+  }
+
+  if (command === "accept") {
+    const challengedId = message.author.id;
+    const challenge = client.challenges
+      ? client.challenges[challengedId]
+      : null;
+
+    if (!challenge) {
+      return message.channel.send("You have no pending challenges.");
     }
-  
 
-    if (command === 'accept') {
-      const challengedId = message.author.id;
-      const challenge = client.challenges ? client.challenges[challengedId] : null;
-  
-      if (!challenge) {
-        return message.channel.send('You have no pending challenges.');
-      }
-  
-      const { challengerId } = challenge;
-  
+    const { challengerId } = challenge;
 
-      db.get(`SELECT * FROM users WHERE id = ?`, [challengerId], (err, challenger) => {
+    db.get(
+      `SELECT * FROM users WHERE id = ?`,
+      [challengerId],
+      (err, challenger) => {
         if (err) return console.error(err.message);
-        db.get(`SELECT * FROM users WHERE id = ?`, [challengedId], (err, challenged) => {
-          if (err) return console.error(err.message);
+        db.get(
+          `SELECT * FROM users WHERE id = ?`,
+          [challengedId],
+          (err, challenged) => {
+            if (err) return console.error(err.message);
 
-          let challengerHealth = challenger.health;
-          let challengedHealth = challenged.health;
-          const challengerAttack = challenger.strength;
-          const challengedAttack = challenged.strength;
-          let battleLog = `**PvP Battle between ${challenger.username} and ${challenged.username}!**\n\n`;
-  
-          while (challengerHealth > 0 && challengedHealth > 0) {
-            challengedHealth -= challengerAttack;
-            if (challengedHealth < 0) challengedHealth = 0;
-  
-            battleLog += `${challenger.username} attacks ${challenged.username}, dealing ${challengerAttack} damage. ${challenged.username} has ${challengedHealth} health left.\n`;
-  
-            if (challengedHealth <= 0) {
-              battleLog += `${challenged.username} has been defeated!\n`;
-              break;
+            let challengerHealth = challenger.health;
+            let challengedHealth = challenged.health;
+            const challengerAttack = challenger.strength;
+            const challengedAttack = challenged.strength;
+            let battleLog = `**PvP Battle between ${challenger.username} and ${challenged.username}!**\n\n`;
+
+            while (challengerHealth > 0 && challengedHealth > 0) {
+              challengedHealth -= challengerAttack;
+              if (challengedHealth < 0) challengedHealth = 0;
+
+              battleLog += `${challenger.username} attacks ${challenged.username}, dealing ${challengerAttack} damage. ${challenged.username} has ${challengedHealth} health left.\n`;
+
+              if (challengedHealth <= 0) {
+                battleLog += `${challenged.username} has been defeated!\n`;
+                break;
+              }
+
+              challengerHealth -= challengedAttack;
+              if (challengerHealth < 0) challengerHealth = 0;
+
+              battleLog += `${challenged.username} attacks ${challenger.username}, dealing ${challengedAttack} damage. ${challenger.username} has ${challengerHealth} health left.\n`;
+
+              if (challengerHealth <= 0) {
+                battleLog += `${challenger.username} has been defeated!\n`;
+                break;
+              }
+
+              battleLog += "\n";
             }
-  
-            challengerHealth -= challengedAttack;
-            if (challengerHealth < 0) challengerHealth = 0;
-  
-            battleLog += `${challenged.username} attacks ${challenger.username}, dealing ${challengedAttack} damage. ${challenger.username} has ${challengerHealth} health left.\n`;
-  
+
             if (challengerHealth <= 0) {
-              battleLog += `${challenger.username} has been defeated!\n`;
-              break;
+              db.run(
+                `UPDATE users SET health = 0, death = death + 1 WHERE id = ?`,
+                [challengerId],
+                (err) => {
+                  if (err) return console.error(err.message);
+                  resetToLevel1(challengerId);
+                }
+              );
+            } else {
+              db.run(
+                `UPDATE users SET health = ? WHERE id = ?`,
+                [challengerHealth, challengerId],
+                (err) => {
+                  if (err) return console.error(err.message);
+                }
+              );
             }
-  
-            battleLog += '\n';
-          }
-          
-          if (challengerHealth <= 0) {
-            db.run(`UPDATE users SET health = 0, death = death + 1 WHERE id = ?`, [challengerId], (err) => {
-              if (err) return console.error(err.message);
-              resetToLevel1(challengerId);
-            });
-          } else {
-            db.run(`UPDATE users SET health = ? WHERE id = ?`, [challengerHealth, challengerId], (err) => {
-              if (err) return console.error(err.message);
-            });
-          }
-  
-          if (challengedHealth <= 0) {
-            db.run(`UPDATE users SET health = 0, death = death + 1 WHERE id = ?`, [challengedId], (err) => {
-              if (err) return console.error(err.message);
-              resetToLevel1(challengedId);
-            });
-          } else {
-            db.run(`UPDATE users SET health = ? WHERE id = ?`, [challengedHealth, challengedId], (err) => {
-              if (err) return console.error(err.message);
-            });
-          }
-          message.channel.send(battleLog);
-          delete client.challenges[challengedId];
-        });
-      });
-    }
 
-//shop stuff  
+            if (challengedHealth <= 0) {
+              db.run(
+                `UPDATE users SET health = 0, death = death + 1 WHERE id = ?`,
+                [challengedId],
+                (err) => {
+                  if (err) return console.error(err.message);
+                  resetToLevel1(challengedId);
+                }
+              );
+            } else {
+              db.run(
+                `UPDATE users SET health = ? WHERE id = ?`,
+                [challengedHealth, challengedId],
+                (err) => {
+                  if (err) return console.error(err.message);
+                }
+              );
+            }
+            message.channel.send(battleLog);
+            delete client.challenges[challengedId];
+          }
+        );
+      }
+    );
+  }
+
+  //shop stuff
   const shopInventory = {
-    make_sure_you_are_full_health_before_buying: {gold: 0, strength: 0, health: 0},
+    make_sure_you_are_full_health_before_buying: {
+      gold: 0,
+      strength: 0,
+      health: 0,
+    },
     wooden_sword: { gold: 100, strength: 10, health: 0 },
-    health_potion: { gold: 75, strength: 0, health: 100},
+    health_potion: { gold: 75, strength: 0, health: 100 },
     wooden_bow: { gold: 150, strength: 12, health: 0 },
     leather_armor: { gold: 100, strength: 0, health: 10 },
     sword: { gold: 1000, strength: 50, health: 20 },
     bow: { gold: 500, strength: 25, health: 15 },
-    steel_sword: { gold: 10000, strength: 150, health: 40 }, 
+    steel_sword: { gold: 10000, strength: 150, health: 40 },
     crossbow: { gold: 900, strength: 150, health: 20 },
     chainmail_armor: { gold: 800, strength: 0, health: 60 },
     fire_spell: { gold: 10000, strength: 300, health: 100 },
@@ -413,43 +487,56 @@ client.on('messageCreate', message => {
     plate_armor: { gold: 15000, strength: 0, health: 250 },
     magic_staff: { gold: 25000, strength: 600, health: 200 },
     lightning_spell: { gold: 35000, strength: 800, health: 250 },
-    bacardi: {gold: 100000, strength: 1000, health: -400}
-};
+    bacardi: { gold: 100000, strength: 1000, health: -400 },
+  };
 
-  if (command === 'buy') {
+  if (command === "buy") {
     const itemName = args[0];
     const item = shopInventory[itemName];
 
     if (!item) {
-      return message.channel.send('Invalid item name. Please check the shop and try again.');
+      return message.channel.send(
+        "Invalid item name. Please check the shop and try again."
+      );
     }
 
-    db.get(`SELECT gold, strength, health FROM users WHERE id = ?`, [message.author.id], (err, row) => {
-      if (err) {
-        return console.error(err.message);
-      }
-      if (!row) {
-        return message.channel.send('You are not registered. Use !register to sign up.');
-      }
-      if (row.gold < item.gold) {
-        return message.channel.send('You do not have enough gold to buy this item.');
-      }
-
-      const newGold = row.gold - item.gold;
-      const newStrength = row.strength + item.strength;
-      const newHealth = row.health + item.health; 
-
-      db.run(`UPDATE users SET gold = ?, strength = ?, health = ? WHERE id = ?`, [newGold, newStrength, newHealth, message.author.id], function(err) {
+    db.get(
+      `SELECT gold, strength, health FROM users WHERE id = ?`,
+      [message.author.id],
+      (err, row) => {
         if (err) {
           return console.error(err.message);
         }
-        message.channel.send(`You bought a ${itemName}! Your new stats are:\nGold: ${newGold}\nStrength: ${newStrength}\nHealth: ${newHealth}`);
-      });
-    });
+        if (!row) {
+          return message.channel.send(
+            "You are not registered. Use !register to sign up."
+          );
+        }
+        if (row.gold < item.gold) {
+          return message.channel.send(
+            "You do not have enough gold to buy this item."
+          );
+        }
+
+        const newGold = row.gold - item.gold;
+        const newStrength = row.strength + item.strength;
+        const newHealth = row.health + item.health;
+
+        db.run(
+          `UPDATE users SET gold = ?, strength = ?, health = ? WHERE id = ?`,
+          [newGold, newStrength, newHealth, message.author.id],
+          function (err) {
+            if (err) {
+              return console.error(err.message);
+            }
+            message.channel.send(
+              `You bought a ${itemName}! Your new stats are:\nGold: ${newGold}\nStrength: ${newStrength}\nHealth: ${newHealth}`
+            );
+          }
+        );
+      }
+    );
   }
-
-
 });
-
 
 client.login(process.env.GITHUB_SECRET);
