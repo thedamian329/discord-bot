@@ -10,7 +10,7 @@ function profile(message, command, db, handleLevelUp) {
           );
         }
         message.channel.send(
-          `Profile of ${row.username}: \nLevel: ${row.level} \nEXP: ${row.exp} \nGold: ${row.gold} \nWood: ${row.wood} \nStone: ${row.stone} \nFish: ${row.fish} \nStrength: ${row.strength} \nHealth: ${row.health} \nStealth: ${row.stealth} \nMeat: ${row.meat} \nWheat: ${row.wheat} \nBread: ${row.bread} \nDeaths: ${row.death} \nPvp: ${row.pvp}`
+          `Profile of ${row.username}: \nLevel: ${row.level} \nEXP: ${row.exp} \nGold: ${row.gold} \nWood: ${row.wood} \nStone: ${row.stone} \nFish: ${row.fish} \nStrength: ${row.strength} \nHealth: ${row.health} \nStealth: ${row.stealth} \nMeat: ${row.meat} \nWheat: ${row.wheat} \nBread: ${row.bread} \nDeaths: ${row.death} \nPvp: ${row.pvp} \nDungeon: ${row.dungeon}`
         );
       }
     );

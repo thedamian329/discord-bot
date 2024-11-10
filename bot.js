@@ -33,7 +33,7 @@ const rulesMessage = `
 **Patch Notes - Version 1.4.0**
 **WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
 fixed you being able to pickpocket and challenge yourself to a fight.
-You can no longer have negative wood. Added a gambling function. Win gold or lose health!
+You can no longer have negative wood.
 
 
 
@@ -41,8 +41,8 @@ You can no longer have negative wood. Added a gambling function. Win gold or los
 - \`!register\`: register to become a player.
 - \`!profile\`: View your stats and inventory.
 - \`!chop\`: Chop trees to gain wood, experience, and strength.
-- \`!mine\`: Mine stone to gain stone, experience, and strength
-- \`!fish\`: fish to sell and gain exp
+- \`!mine\`: Mine stone to gain stone, experience, and strength.
+- \`!fish\`: fish to sell and gain exp.
 - \`!sell[fish][stone]\`: Sell your fish to earn gold.
 - \`!hunt\`: Hunt for meat and gain experience.
 - \`!sneak\`: Practice your stealth.
@@ -75,6 +75,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
   stone INT DEFAULT 0,
   level INT DEFAULT 1,
   death INT DEFAULT 0,
+  dungeon INT DEFAULT 0,
   exp INT DEFAULT 0
 )`);
 
@@ -137,7 +138,7 @@ client.on("messageCreate", (message) => {
       eatmeat(message, command, db, handleLevelUp, getDefaultHealthForLevel);
       break;
     case "sell":
-      sell(message, command, db, handleLevelUp.client);
+      sell(message, command, db, handleLevelUp, client);
       break;
   }
 
@@ -194,9 +195,10 @@ client.on("messageCreate", (message) => {
     const defaultWheat = 0;
     const defaultBread = 0;
     const defaultStone = 0;
+    const defaultDungeon = 0;
 
     db.run(
-      `UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ? WHERE id = ?`,
+      `UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ?, dungeon = ? WHERE id = ?`,
       [
         defaultHealth,
         defaultStrength,
@@ -208,6 +210,7 @@ client.on("messageCreate", (message) => {
         defaultWheat,
         defaultBread,
         defaultStone,
+        defaultDungeon,
         userId,
       ],
       (err) => {

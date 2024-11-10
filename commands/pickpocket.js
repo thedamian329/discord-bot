@@ -1,6 +1,6 @@
 function pickpocket(message, command, db, handleLevelUp, client, args) {
   if (command === "pickpocket") {
-    const targetId = args[0].replace(/[^0-9]/g, ""); // Extract ID from mention
+    const targetId = args[0].replace(/[^0-9]/g, "");
     if (message.author.id === targetId) {
       return message.channel.send("You cannot pickpocket yourself!");
     }

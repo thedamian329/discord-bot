@@ -16,13 +16,13 @@ function fire(message, command, db, handleLevelUp) {
 
         if (row.wood < 5) {
           return message.channel.send(
-            "You do not have any wood to start a fire nig."
+            "You do not have any wood to start a fire."
           );
         }
 
         let maxHealth = 50 + (row.level - 1) * 50;
         if (row.health >= maxHealth) {
-          return message.channel.send("You are already at full health bitch.");
+          return message.channel.send("You are already at full health.");
         }
 
         // how much you heal for
