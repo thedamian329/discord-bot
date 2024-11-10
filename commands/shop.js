@@ -5,7 +5,7 @@ const shopInventory = {
     health: 0,
   },
   wooden_sword: { gold: 100, strength: 10, health: 0 },
-  health_potion: { gold: 75, strength: 0, health: 100 },
+  health_potion: { gold: 75, strength: 0, health: 110 },
   wooden_bow: { gold: 150, strength: 12, health: 0 },
   leather_armor: { gold: 100, strength: 0, health: 10 },
   sword: { gold: 1000, strength: 50, health: 20 },
@@ -26,7 +26,7 @@ const shopInventory = {
 
 function shop(message, command, db, handleLevelUp) {
   if (command === "shop") {
-    let shopList = "List of items in shop cunt:\n";
+    let shopList = "List of items in shop:\n";
     for (const shop in shopInventory) {
       shopList += `**${shop}** - Gold: ${shopInventory[shop].gold}, Strength: ${shopInventory[shop].strength}, health ${shopInventory[shop].health}\n`;
     }
