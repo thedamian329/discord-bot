@@ -154,7 +154,7 @@ client.on("messageCreate", (message) => {
         if (row.exp >= requiredExp) {
           let newLevel = row.level + 1;
           let newHealth = getDefaultHealthForLevel(newLevel); // Calculate health based on new level
-          let newStrength = row.strength + 25;
+          let newStrength = row.strength + 50;
 
           db.run(
             `UPDATE users SET level = ?, exp = exp - ?, health = ?, strength = ? WHERE id = ?`,
@@ -344,12 +344,12 @@ client.on("messageCreate", (message) => {
   }
   // test enemies for now
   const dungeonEnemies = {
-    slime: { health: 50, strength: 10, exp: 10, gold: 5 },
-    wolf: { health: 120, strength: 20, exp: 20, gold: 15 },
-    goblin: { health: 300, strength: 35, exp: 30, gold: 25 },
-    orc: { health: 600, strength: 60, exp: 50, gold: 40 },
-    knight: { health: 1200, strength: 100, exp: 80, gold: 100 },
-    dragon: { health: 5000, strength: 200, exp: 500, gold: 500 },
+    slime: { health: 1000, strength: 150, exp: 100, gold: 50 },
+    wolf: { health: 1500, strength: 300, exp: 200, gold: 100 },
+    goblin: { health: 1000, strength: 500, exp: 300, gold: 150 },
+    orc: { health: 5000, strength: 300, exp: 500, gold: 300 },
+    knight: { health: 7000, strength: 1000, exp: 1500, gold: 1000 },
+    dragon: { health: 15000, strength: 1000, exp: 10000, gold: 10000 },
   };
 
   if (command === "dungeon") {
@@ -381,7 +381,7 @@ client.on("messageCreate", (message) => {
         let playerHealth = player.health;
         let totalGoldEarned = 0;
         let totalExpEarned = 0;
-        let battleLog = `**Dungeon Crawl Begins!**\n\n`;
+        let battleLog = `**YOU ENTERED A DUNGEON!**\n\n`;
         let survivedDungeon = true;
 
         const battleNextEnemy = (index) => {
@@ -466,7 +466,7 @@ client.on("messageCreate", (message) => {
             bossHealth -= Math.max(0, player.strength);
             battleLog += `You attack the Dragon for ${player.strength} damage.\n`;
             if (bossHealth <= 0) {
-              battleLog += `The Dragon has been defeated! You are victorious!\n\n`;
+              battleLog += `The Dragon has been defeated!\n\n`;
               totalGoldEarned += boss.gold;
               totalExpEarned += boss.exp;
               return completeDungeon();
