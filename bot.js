@@ -30,8 +30,9 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 2.0.0**
-          ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)
+**Patch Notes - Version 2.1.0**
+    **ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)**
+      fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die
 
 
 
@@ -186,7 +187,6 @@ client.on("messageCreate", (message) => {
   function resetToLevel1(userId) {
     const defaultHealth = 50;
     const defaultStrength = 10;
-    const defaultGold = 0;
     const defaultFish = 0;
     const defaultMeat = 0;
     const defaultStealth = 0;
@@ -194,14 +194,12 @@ client.on("messageCreate", (message) => {
     const defaultWheat = 0;
     const defaultBread = 0;
     const defaultStone = 0;
-    const defaultDungeon = 0;
 
     db.run(
-      `UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, gold = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ?, dungeon = ? WHERE id = ?`,
+      `UPDATE users SET level = 1, exp = 0, health = ?, strength = ?, fish = ?, meat = ?, stealth = ?, wood = ?, wheat = ?, bread = ?, stone = ? WHERE id = ?`,
       [
         defaultHealth,
         defaultStrength,
-        defaultGold,
         defaultFish,
         defaultMeat,
         defaultStealth,
@@ -209,7 +207,6 @@ client.on("messageCreate", (message) => {
         defaultWheat,
         defaultBread,
         defaultStone,
-        defaultDungeon,
         userId,
       ],
       (err) => {
