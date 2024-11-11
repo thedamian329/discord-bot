@@ -30,10 +30,9 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 1.4.0**
-**WHEN YOU DIE YOU NOW START BACK AT LEVEL 1**
-fixed you being able to pickpocket and challenge yourself to a fight.
-You can no longer have negative wood.
+**Patch Notes - Version 2.0.0**
+          ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)
+
 
 
 
@@ -340,6 +339,180 @@ client.on("messageCreate", (message) => {
             }
           );
         }
+      }
+    );
+  }
+  // test enemies for now
+  const dungeonEnemies = {
+    slime: { health: 50, strength: 10, exp: 10, gold: 5 },
+    wolf: { health: 120, strength: 20, exp: 20, gold: 15 },
+    goblin: { health: 300, strength: 35, exp: 30, gold: 25 },
+    orc: { health: 600, strength: 60, exp: 50, gold: 40 },
+    knight: { health: 1200, strength: 100, exp: 80, gold: 100 },
+    dragon: { health: 5000, strength: 200, exp: 500, gold: 500 },
+  };
+
+  if (command === "dungeon") {
+    const enemySequence = ["slime", "wolf", "goblin", "orc", "knight"];
+    const bossChance = 0.2;
+
+    db.get(
+      `SELECT * FROM users WHERE id = ?`,
+      [message.author.id],
+      (err, player) => {
+        if (err) return console.error(err.message);
+        if (!player)
+          return message.channel.send(
+            "You are not registered. Use !register to sign up."
+          );
+
+        if (player.level < 5) {
+          return message.channel.send(
+            "You must be at least level 5 to enter the dungeon."
+          );
+        }
+        if (player.health < 250) {
+          // this is only the min health for level 5,
+          return message.channel.send(
+            "You must be at full health to enter the dungeon."
+          );
+        }
+
+        let playerHealth = player.health;
+        let totalGoldEarned = 0;
+        let totalExpEarned = 0;
+        let battleLog = `**Dungeon Crawl Begins!**\n\n`;
+        let survivedDungeon = true;
+
+        const battleNextEnemy = (index) => {
+          if (index >= enemySequence.length) {
+            if (Math.random() < bossChance) {
+              return handleBossFight();
+            }
+            return completeDungeon();
+          }
+
+          const enemyType = enemySequence[index];
+          const enemy = dungeonEnemies[enemyType];
+          let enemyHealth = enemy.health;
+
+          battleLog += `**Encounter: ${enemyType.toUpperCase()}**\n`;
+
+          while (playerHealth > 0 && enemyHealth > 0) {
+            enemyHealth -= Math.max(0, player.strength);
+            battleLog += `You attack the ${enemyType} for ${player.strength} damage.\n`;
+            if (enemyHealth <= 0) {
+              battleLog += `The ${enemyType} has been defeated!\n\n`;
+              totalGoldEarned += enemy.gold;
+              totalExpEarned += enemy.exp;
+              break;
+            }
+
+            playerHealth -= Math.max(0, enemy.strength);
+            battleLog += `The ${enemyType} attacks you for ${enemy.strength} damage.\n`;
+            if (playerHealth <= 0) {
+              battleLog += `You have been defeated by the ${enemyType}.\n`;
+              survivedDungeon = false;
+              return handlePlayerDefeat();
+            }
+          }
+
+          message.channel.send(battleLog).then(() => {
+            if (playerHealth > 0) {
+              message.channel.send(
+                "Do you want to heal before continuing to the next enemy? Type `!heal` to heal or `!continue` to move on."
+              );
+
+              const filter = (msg) =>
+                msg.author.id === message.author.id &&
+                (msg.content === "!heal" || msg.content === "!continue");
+              const collector = message.channel.createMessageCollector({
+                filter,
+                max: 1,
+                time: 60000,
+              });
+
+              collector.on("collect", (msg) => {
+                if (msg.content === "!heal") {
+                  playerHealth = Math.min(playerHealth + 250, player.health); // you can only heal for max 250
+                  message.channel.send(
+                    `You healed! Your current health is ${playerHealth}.`
+                  );
+                }
+
+                battleNextEnemy(index + 1);
+              });
+
+              collector.on("end", (collected) => {
+                if (collected.size === 0) {
+                  message.channel.send(
+                    "Time ran out! Moving on to the next enemy."
+                  );
+                  battleNextEnemy(index + 1);
+                }
+              });
+            }
+          });
+        };
+
+        const handleBossFight = () => {
+          // add a new boss thats not the same as the end boss
+
+          const boss = dungeonEnemies["dragon"];
+          let bossHealth = boss.health;
+          battleLog += `**Boss Fight: DRAGON!**\n\n`;
+
+          while (playerHealth > 0 && bossHealth > 0) {
+            bossHealth -= Math.max(0, player.strength);
+            battleLog += `You attack the Dragon for ${player.strength} damage.\n`;
+            if (bossHealth <= 0) {
+              battleLog += `The Dragon has been defeated! You are victorious!\n\n`;
+              totalGoldEarned += boss.gold;
+              totalExpEarned += boss.exp;
+              return completeDungeon();
+            }
+
+            playerHealth -= Math.max(0, boss.strength);
+            battleLog += `The Dragon attacks you for ${boss.strength} damage.\n`;
+            if (playerHealth <= 0) {
+              battleLog += `You have been defeated by the Dragon.\n`;
+              return handlePlayerDefeat();
+            }
+          }
+        };
+
+        const completeDungeon = () => {
+          db.run(
+            `UPDATE users SET health = ?, exp = ?, gold = ?, dungeon = dungeon + 1 WHERE id = ?`,
+            [
+              playerHealth,
+              player.exp + totalExpEarned,
+              player.gold + totalGoldEarned,
+              message.author.id,
+            ],
+            (err) => {
+              if (err) return console.error(err.message);
+              message.channel.send(
+                `${battleLog}\nCongratulations! You cleared the dungeon and earned ${totalExpEarned} EXP and ${totalGoldEarned} gold! You have ${playerHealth} health remaining.`
+              );
+              handleLevelUp(message.author.id);
+            }
+          );
+        };
+
+        const handlePlayerDefeat = () => {
+          db.run(
+            `UPDATE users SET health = 0, death = death + 1 WHERE id = ?`,
+            [message.author.id],
+            (err) => {
+              if (err) return console.error(err.message);
+              message.channel.send(battleLog);
+              resetToLevel1(message.author.id);
+            }
+          );
+        };
+
+        battleNextEnemy(0);
       }
     );
   }
