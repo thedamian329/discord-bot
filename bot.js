@@ -20,6 +20,7 @@ const shop = require("./commands/shop");
 const eatbread = require("./commands/eatbread");
 const eatmeat = require("./commands/eatmeat");
 const sell = require("./commands/sell");
+const gym = require("./commands/training");
 
 // Connect to the SQLite database
 let db = new sqlite3.Database("./rpg.db", (err) => {
@@ -32,7 +33,8 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 const rulesMessage = `
 **Patch Notes - Version 2.1.0**
 **ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)**
-  fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die.
+  fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die. Added Training. !training brings up the list
+  of training you can complete. !train [type] will train.
 
 
 
@@ -56,6 +58,8 @@ const rulesMessage = `
 - \`!shop\`: View items available in the shop.
 - \`!buy [item]\`: Purchase an item from the shop.
 - \`!patch\`: see the current patch and patch notes.
+- \`!training\: Bring up the training list.
+- \`!train [type]\: Train
 `;
 
 //player inventory
@@ -139,6 +143,9 @@ client.on("messageCreate", (message) => {
       break;
     case "sell":
       sell(message, command, db, handleLevelUp, client);
+      break;
+    case "training":
+      gym(message, command, db, handleLevelUp);
       break;
   }
 
@@ -661,6 +668,7 @@ client.on("messageCreate", (message) => {
     magic_staff: { gold: 25000, strength: 600, health: 200 },
     lightning_spell: { gold: 35000, strength: 800, health: 250 },
     bacardi: { gold: 100000, strength: 1000, health: -400 },
+    lagunitas: { gold: 1000, strength: 500, health: -100 },
   };
 
   if (command === "buy") {
@@ -704,6 +712,64 @@ client.on("messageCreate", (message) => {
             }
             message.channel.send(
               `You bought a ${itemName}! Your new stats are:\nGold: ${newGold}\nStrength: ${newStrength}\nHealth: ${newHealth}`
+            );
+          }
+        );
+      }
+    );
+  }
+
+  const training = {
+    novice: { gold: 500, strength: 100, health: 0 },
+    apprentice: { gold: 1000, strength: 500, health: 250 },
+    master: { gold: 2500, strength: 1000, health: 500 },
+  };
+
+  if (command === "train") {
+    const trainingName = args[0];
+    if (!trainingName) {
+      return message.channel.send("Please specify a training name.");
+    }
+
+    const trainType = training[trainingName];
+
+    if (!trainType) {
+      return message.channel.send(
+        "Invalid training name. Please check the training list and try again"
+      );
+    }
+
+    db.get(
+      `SELECT gold, strength, health FROM users WHERE id = ?`,
+      [message.author.id],
+      (err, row) => {
+        if (err) {
+          return console.error(err.message);
+        }
+        if (!row) {
+          return message.channel.send(
+            "You are not registered. Use !register to sign up."
+          );
+        }
+        if (row.gold < trainType.gold) {
+          return message.channel.send(
+            "You do not have enough gold for this training."
+          );
+        }
+
+        const newGold = row.gold - trainType.gold;
+        const newStrength = row.strength + trainType.strength;
+        const newHealth = row.health + trainType.health;
+
+        db.run(
+          `UPDATE users SET gold = ?, strength = ?, health = ? WHERE id = ?`,
+          [newGold, newStrength, newHealth, message.author.id],
+          function (err) {
+            if (err) {
+              return console.error(err.message);
+            }
+            message.channel.send(
+              `You completed ${trainingName} training! Your new stats are: \nGold: ${newGold}\nStrength: ${newStrength}\nHealth: ${newHealth}`
             );
           }
         );
