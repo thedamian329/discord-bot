@@ -652,10 +652,10 @@ client.on("messageCreate", (message) => {
       health: 0,
     },
     wooden_sword: { gold: 100, strength: 10, health: 0 },
-    health_potion: { gold: 75, strength: 0, health: 100 },
+    health_potion: { gold: 75, strength: 0, health: 110 },
     wooden_bow: { gold: 150, strength: 12, health: 0 },
     leather_armor: { gold: 100, strength: 0, health: 10 },
-    sword: { gold: 1000, strength: 50, health: 20 },
+    sword: { gold: 1000, strength: 50, health: 50 },
     bow: { gold: 500, strength: 25, health: 15 },
     steel_sword: { gold: 10000, strength: 150, health: 40 },
     crossbow: { gold: 900, strength: 150, health: 20 },
@@ -668,7 +668,7 @@ client.on("messageCreate", (message) => {
     magic_staff: { gold: 25000, strength: 600, health: 200 },
     lightning_spell: { gold: 35000, strength: 800, health: 250 },
     bacardi: { gold: 100000, strength: 1000, health: -400 },
-    lagunitas: { gold: 1000, strength: 500, health: -100 },
+    lagunitas: { gold: 1000, strength: 500, health: -10000 },
   };
 
   if (command === "buy") {
@@ -720,9 +720,9 @@ client.on("messageCreate", (message) => {
   }
 
   const training = {
-    novice: { gold: 500, strength: 100, health: 0 },
-    apprentice: { gold: 1000, strength: 500, health: 250 },
-    master: { gold: 2500, strength: 1000, health: 500 },
+    novice: { gold: 1000, strength: 100, health: 0 },
+    apprentice: { gold: 5000, strength: 250, health: 100 },
+    master: { gold: 10000, strength: 500, health: 0 },
   };
 
   if (command === "train") {

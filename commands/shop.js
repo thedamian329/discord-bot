@@ -8,7 +8,7 @@ const shopInventory = {
   health_potion: { gold: 75, strength: 0, health: 110 },
   wooden_bow: { gold: 150, strength: 12, health: 0 },
   leather_armor: { gold: 100, strength: 0, health: 10 },
-  sword: { gold: 1000, strength: 50, health: 20 },
+  sword: { gold: 1000, strength: 50, health: 50 },
   bow: { gold: 500, strength: 25, health: 15 },
   steel_sword: { gold: 10000, strength: 150, health: 40 },
   crossbow: { gold: 900, strength: 150, health: 20 },
@@ -21,7 +21,7 @@ const shopInventory = {
   magic_staff: { gold: 25000, strength: 600, health: 200 },
   lightning_spell: { gold: 35000, strength: 800, health: 250 },
   bacardi: { gold: 100000, strength: 1000, health: -400 },
-  lagunitas: { gold: 1000, strength: 500, health: -100 },
+  lagunitas: { gold: 1000, strength: 500, health: -10000 },
 };
 
 function shop(message, command, db, handleLevelUp) {

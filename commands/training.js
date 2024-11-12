@@ -1,7 +1,7 @@
 const trainingGym = {
-  novice: { gold: 500, strength: 100, health: 0 },
-  apprentice: { gold: 1000, strength: 500, health: 250 },
-  master: { gold: 2500, strength: 1000, health: 500 },
+  novice: { gold: 1000, strength: 100, health: 0 },
+  apprentice: { gold: 5000, strength: 250, health: 100 },
+  master: { gold: 10000, strength: 500, health: 0 },
 };
 
 function gym(message, command, db, handleLevelUp) {
