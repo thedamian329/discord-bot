@@ -31,10 +31,10 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 2.1.0**
+**Patch Notes - Version 2.1.1**
 **ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)**
   fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die. Added Training. !training brings up the list
-  of training you can complete. !train [type] will train.
+  of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining.
 
 
 
