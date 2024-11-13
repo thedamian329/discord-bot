@@ -13,7 +13,7 @@ function mine(message, command, db, handleLevelUp) {
           );
         }
 
-        const goldChance = Math.random() < 0.1; // try fucking around with these numbers.
+        const goldChance = Math.random() < 0.7; // try fucking around with these numbers.
         const goldEarned = goldChance ? Math.floor(Math.random() * 100) + 1 : 0;
 
         db.run(
