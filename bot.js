@@ -32,9 +32,9 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 
 const rulesMessage = `
 **Patch Notes - Version 2.1.1**
-**ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal for 250 health (max for level 5 with no items)**
+**ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal to full health or leave the dungeon if you are a pussy**
   fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die. Added Training. !training brings up the list
-  of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining.
+  of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining. 
 
 
 
@@ -161,7 +161,15 @@ client.on("messageCreate", (message) => {
         let requiredExp = getRequiredExp(row.level);
         if (row.exp >= requiredExp) {
           let newLevel = row.level + 1;
-          let newHealth = getDefaultHealthForLevel(newLevel); // Calculate health based on new level
+
+          // new way fpr getting default health
+          let currentDefaultHealth = getDefaultHealthForLevel(row.level);
+          let newDefaultHealth = getDefaultHealthForLevel(newLevel);
+
+          //this should take in any bonus health you have over the default and add it to the new default
+          let healthExcess = row.health - currentDefaultHealth;
+          let newHealth = newDefaultHealth + Math.max(0, healthExcess);
+
           let newStrength = row.strength + 50;
 
           db.run(
@@ -376,7 +384,6 @@ client.on("messageCreate", (message) => {
           );
         }
         if (player.health < 250) {
-          // this is only the min health for level 5,
           return message.channel.send(
             "You must be at full health to enter the dungeon."
           );
@@ -387,6 +394,7 @@ client.on("messageCreate", (message) => {
         let totalExpEarned = 0;
         let battleLog = `**YOU ENTERED A DUNGEON!**\n\n`;
         let survivedDungeon = true;
+        let initialHealth = player.health; // Player's health when entering the dungeon
 
         const battleNextEnemy = (index) => {
           if (index >= enemySequence.length) {
@@ -424,12 +432,12 @@ client.on("messageCreate", (message) => {
           message.channel.send(battleLog).then(() => {
             if (playerHealth > 0) {
               message.channel.send(
-                "Do you want to heal before continuing to the next enemy? Type `!heal` to heal or `!continue` to move on."
+                "Do you want to heal, continue to the next enemy, or leave the dungeon? Type `!heal` to heal, `!continue` to move on, or `!leave` to exit."
               );
 
               const filter = (msg) =>
                 msg.author.id === message.author.id &&
-                (msg.content === "!heal" || msg.content === "!continue");
+                ["!heal", "!continue", "!leave"].includes(msg.content);
               const collector = message.channel.createMessageCollector({
                 filter,
                 max: 1,
@@ -438,20 +446,24 @@ client.on("messageCreate", (message) => {
 
               collector.on("collect", (msg) => {
                 if (msg.content === "!heal") {
-                  playerHealth = Math.min(playerHealth + 250, player.health); // you can only heal for max 250
+                  playerHealth = initialHealth;
                   message.channel.send(
-                    `You healed! Your current health is ${playerHealth}.`
+                    `You healed back to your starting health! Your current health is now ${playerHealth}.`
                   );
+                  battleNextEnemy(index + 1);
+                } else if (msg.content === "!continue") {
+                  battleNextEnemy(index + 1);
+                } else if (msg.content === "!leave") {
+                  message.channel.send(
+                    "You have left the dungeon. Your progress is saved."
+                  );
+                  completeDungeon(true);
                 }
-
-                battleNextEnemy(index + 1);
               });
 
               collector.on("end", (collected) => {
                 if (collected.size === 0) {
-                  message.channel.send(
-                    "Time ran out! Moving on to the next enemy."
-                  );
+                  message.channel.send("Time's up! Moving to the next enemy.");
                   battleNextEnemy(index + 1);
                 }
               });
@@ -460,8 +472,6 @@ client.on("messageCreate", (message) => {
         };
 
         const handleBossFight = () => {
-          // add a new boss thats not the same as the end boss
-
           const boss = dungeonEnemies["dragon"];
           let bossHealth = boss.health;
           battleLog += `**Boss Fight: DRAGON!**\n\n`;
@@ -485,9 +495,18 @@ client.on("messageCreate", (message) => {
           }
         };
 
-        const completeDungeon = () => {
+        const completeDungeon = (earlyExit = false) => {
+          const finalLog = earlyExit
+            ? `${battleLog}\nYou left the dungeon early. You earned ${totalExpEarned} EXP and ${totalGoldEarned} gold.`
+            : `${battleLog}\nCongratulations! You cleared the dungeon and earned ${totalExpEarned} EXP and ${totalGoldEarned} gold! You have ${playerHealth} health remaining.`;
+
+          // If player left early, don't update the dungeon count
+          const dungeonUpdateQuery = earlyExit
+            ? `UPDATE users SET health = ?, exp = ?, gold = ? WHERE id = ?`
+            : `UPDATE users SET health = ?, exp = ?, gold = ?, dungeon = dungeon + 1 WHERE id = ?`;
+
           db.run(
-            `UPDATE users SET health = ?, exp = ?, gold = ?, dungeon = dungeon + 1 WHERE id = ?`,
+            dungeonUpdateQuery,
             [
               playerHealth,
               player.exp + totalExpEarned,
@@ -496,10 +515,8 @@ client.on("messageCreate", (message) => {
             ],
             (err) => {
               if (err) return console.error(err.message);
-              message.channel.send(
-                `${battleLog}\nCongratulations! You cleared the dungeon and earned ${totalExpEarned} EXP and ${totalGoldEarned} gold! You have ${playerHealth} health remaining.`
-              );
-              handleLevelUp(message.author.id);
+              message.channel.send(finalLog);
+              if (!earlyExit) handleLevelUp(message.author.id); // Only handle level up if they completed the dungeon
             }
           );
         };
