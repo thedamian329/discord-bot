@@ -25,7 +25,6 @@ function fire(message, command, db, handleLevelUp) {
           return message.channel.send("You are already at full health.");
         }
 
-        // how much you heal for
         let healthGain = 50;
 
         let newHealth = Math.min(maxHealth, row.health + healthGain);

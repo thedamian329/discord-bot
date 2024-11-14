@@ -420,7 +420,7 @@ client.on("messageCreate", (message) => {
             playerHealth -= Math.max(0, enemy.strength);
             battleLog += `The ${enemyType} attacks you for ${enemy.strength} damage.\n`;
             if (playerHealth <= 0) {
-              battleLog += `You have been defeated by the ${enemyType}.\n`;
+              battleLog += `**You have been defeated by the ${enemyType}.**\n\n`;
               survivedDungeon = false;
               return handlePlayerDefeat();
             }
@@ -451,9 +451,7 @@ client.on("messageCreate", (message) => {
                 } else if (msg.content === "!continue") {
                   battleNextEnemy(index + 1);
                 } else if (msg.content === "!leave") {
-                  message.channel.send(
-                    "You have left the dungeon. Your progress is saved."
-                  );
+                  message.channel.send("You have left the dungeon.");
                   completeDungeon(true);
                 }
               });
