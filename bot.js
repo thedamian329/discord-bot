@@ -36,9 +36,6 @@ const rulesMessage = `
   fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die. Added Training. !training brings up the list
   of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining. 
 
-
-
-
        **Commands:**
 - \`!register\`: register to become a player.
 - \`!profile\`: View your stats and inventory.
