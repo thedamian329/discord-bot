@@ -18,6 +18,14 @@ function eatbread(
             "You are not registered. Use !register to sign up."
           );
         }
+
+        const maxHealth = getDefaultHealthForLevel(row.level);
+
+        if (row.health >= maxHealth) {
+          return message.channel.send(
+            "You are already at full health and don't need to eat."
+          );
+        }
         if (row.bread > 0) {
           const newHealth = Math.min(
             row.health + 10,

@@ -18,23 +18,54 @@ function eatmeat(
             "You are not registered. Use !register to sign up."
           );
         }
-        if (row.meat > 0) {
-          const newHealth = Math.min(
-            row.health + 25,
-            getDefaultHealthForLevel(row.level)
-          ); // Heal for 50 health
-          db.run(
-            `UPDATE users SET meat = meat - 1, health = ? WHERE id = ?`,
-            [newHealth, message.author.id],
-            function (err) {
-              if (err) {
-                return console.error(err.message);
-              }
-              message.channel.send(
-                `You ate a piece of meat and restored 25 health. Your health is now ${newHealth}.`
-              );
-            }
+
+        const maxHealth = getDefaultHealthForLevel(row.level);
+
+        if (row.health >= maxHealth) {
+          return message.channel.send(
+            "You are already at full health and don't need to eat."
           );
+        }
+
+        if (row.meat > 0) {
+          const isRotten = Math.random() < 0.2; // 20% may be a little high but lets try for now.
+
+          if (isRotten) {
+            const damage = 30;
+            const expLoss = 15;
+            const newHealth = Math.max(row.health - damage, 0);
+            const newExp = Math.max(row.exp - expLoss, 0);
+
+            db.run(
+              `UPDATE users SET meat = meat - 1, health = ?, exp = ? WHERE id = ?`,
+              [newHealth, newExp, message.author.id],
+              function (err) {
+                if (err) {
+                  return console.error(err.message);
+                }
+                message.channel.send(
+                  `You ate a piece of meat, but it was rotten! You took ${damage} damage and lost ${expLoss} experience. Your health is now ${newHealth}.`
+                );
+                handleLevelUp(message.author.id);
+              }
+            );
+          } else {
+            const healAmount = 25;
+            const newHealth = Math.min(row.health + healAmount, maxHealth);
+
+            db.run(
+              `UPDATE users SET meat = meat - 1, health = ? WHERE id = ?`,
+              [newHealth, message.author.id],
+              function (err) {
+                if (err) {
+                  return console.error(err.message);
+                }
+                message.channel.send(
+                  `You ate a piece of meat and restored ${healAmount} health. Your health is now ${newHealth}.`
+                );
+              }
+            );
+          }
         } else {
           message.channel.send("You have no meat to eat.");
         }
