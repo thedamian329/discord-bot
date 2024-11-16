@@ -23,6 +23,7 @@ const sell = require("./commands/sell");
 const gym = require("./commands/training");
 const master = require("./commands/master");
 const guide = require("./commands/guide");
+const help = require("./commands/help");
 
 // Connect to the SQLite database
 let db = new sqlite3.Database("./rpg.db", (err) => {
@@ -33,32 +34,11 @@ let db = new sqlite3.Database("./rpg.db", (err) => {
 });
 
 const rulesMessage = `
-**Patch Notes - Version 2.1.1**
+**Patch Notes - Version 2.1.4**
 **ADDED DUNGEON. MUST BE LEVEL 5 TO ENTER. Enemies come in waves, you get 60 seconds to heal to full health or leave the dungeon if you are a pussy**
   fixed issue where your dungeon wins got reset on death. You also now get to keep the gold you had when you die. Added Training. !training brings up the list
-  of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining. 
-
-       **Commands:**
-- \`!register\`: register to become a player.
-- \`!profile\`: View your stats and inventory.
-- \`!chop\`: Chop trees to gain wood, experience, and strength.
-- \`!mine\`: Mine stone to gain stone, experience, and strength.
-- \`!fish\`: fish to sell and gain exp.
-- \`!sell[fish][stone]\`: Sell your fish to earn gold.
-- \`!hunt\`: Hunt for meat and gain experience.
-- \`!sneak\`: Practice your stealth.
-- \`!pickpocket [@player]\`: pickpocket a player.
-- \`!fire\`: Sit by the fire to heal.
-- \`!eatbread\`: eat bread.
-- \`!eatmeat\`: eat meat.
-- \`!npc\`: View a list of enemies you can fight.
-- \`!attack [enemy]\`: Engage in battle with an enemy.
-- \`challenge [@player]\`: Challenge a player to a battle. 
-- \`!shop\`: View items available in the shop.
-- \`!buy [item]\`: Purchase an item from the shop.
-- \`!patch\`: see the current patch and patch notes.
-- \`!training\: Bring up the training list.
-- \`!train [type]\: Train
+  of training you can complete. !train [type] will train. You can now get a random gold drop from 1-100 gold while mining. You can get sick and attacked from hunting and 
+  eating the meat. Commands are no longer sent to you, do !help for a full list of commands. 
 `;
 
 //player inventory
@@ -151,6 +131,9 @@ client.on("messageCreate", (message) => {
       break;
     case "guide":
       guide(message, command, db);
+      break;
+    case "help":
+      help(message, command);
       break;
   }
 
