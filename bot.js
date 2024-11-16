@@ -21,6 +21,8 @@ const eatbread = require("./commands/eatbread");
 const eatmeat = require("./commands/eatmeat");
 const sell = require("./commands/sell");
 const gym = require("./commands/training");
+const master = require("./commands/master");
+const guide = require("./commands/guide");
 
 // Connect to the SQLite database
 let db = new sqlite3.Database("./rpg.db", (err) => {
@@ -143,6 +145,12 @@ client.on("messageCreate", (message) => {
       break;
     case "training":
       gym(message, command, db, handleLevelUp);
+      break;
+    case "master":
+      master(message, command, client);
+      break;
+    case "guide":
+      guide(message, command, db);
       break;
   }
 
