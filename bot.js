@@ -349,11 +349,12 @@ client.on("messageCreate", (message) => {
     goblin: { health: 1000, strength: 500, exp: 300, gold: 150 },
     orc: { health: 5000, strength: 300, exp: 500, gold: 300 },
     knight: { health: 7000, strength: 1000, exp: 1500, gold: 1000 },
-    dragon: { health: 15000, strength: 1000, exp: 10000, gold: 10000 },
+    giant: { health: 15000, strength: 2500, exp: 2500, gold: 1500 },
+    dragon: { health: 50000, strength: 10000, exp: 100000, gold: 100000 },
   };
 
   if (command === "dungeon") {
-    const enemySequence = ["slime", "wolf", "goblin", "orc", "knight"];
+    const enemySequence = ["slime", "wolf", "goblin", "orc", "knight, giant"];
     const bossChance = 0.2;
 
     db.get(
@@ -382,7 +383,7 @@ client.on("messageCreate", (message) => {
         let totalExpEarned = 0;
         let battleLog = `**YOU ENTERED A DUNGEON!**\n\n`;
         let survivedDungeon = true;
-        let initialHealth = player.health; // Player's health when entering the dungeon
+        let initialHealth = player.health;
 
         const battleNextEnemy = (index) => {
           if (index >= enemySequence.length) {

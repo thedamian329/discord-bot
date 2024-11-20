@@ -4,7 +4,8 @@ const dungeonEnemies = {
   goblin: { health: 1000, strength: 500, exp: 300, gold: 150 },
   orc: { health: 5000, strength: 300, exp: 500, gold: 300 },
   knight: { health: 7000, strength: 1000, exp: 1500, gold: 1000 },
-  dragon: { health: 15000, strength: 1000, exp: 10000, gold: 10000 },
+  giant: { health: 15000, strength: 2500, exp: 2500, gold: 1500 },
+  dragon: { health: 50000, strength: 10000, exp: 100000, gold: 100000 },
 };
 
 function guide(message, command, db) {
