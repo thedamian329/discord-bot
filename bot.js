@@ -354,7 +354,7 @@ client.on("messageCreate", (message) => {
   };
 
   if (command === "dungeon") {
-    const enemySequence = ["slime", "wolf", "goblin", "orc", "knight, giant"];
+    const enemySequence = ["slime", "wolf", "goblin", "orc", "knight", "giant"];
     const bossChance = 0.2;
 
     db.get(
